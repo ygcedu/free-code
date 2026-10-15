@@ -163,6 +163,8 @@ const cmd = [
   'build',
   './src/entrypoints/cli.tsx',
   '--compile',
+  // Runtime-loaded native packages need package.json main/exports resolution.
+  '--compile-autoload-package-json',
   '--target',
   'bun',
   '--format',

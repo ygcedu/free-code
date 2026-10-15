@@ -1,4 +1,5 @@
 import type { Buffer } from 'buffer'
+import { createRequire } from 'node:module'
 import { isInBundledMode } from '../../utils/bundledMode.js'
 
 export type SharpInstance = {
@@ -34,6 +35,18 @@ type SharpCreator = (options: SharpCreatorOptions) => SharpInstance
 let imageProcessorModule: { default: SharpFunction } | null = null
 let imageCreatorModule: { default: SharpCreator } | null = null
 
+// Compiled Bun modules live under /$bunfs, where sharp cannot find its native
+// dependencies. Resolve the installed package beside the executable instead.
+const requireImageDependency = createRequire(
+  import.meta.url.startsWith('file:///$bunfs/')
+    ? process.execPath
+    : import.meta.url,
+)
+
+function loadSharp<T extends (...args: never[]) => unknown>(): T {
+  return unwrapDefault(requireImageDependency('sharp') as MaybeDefault<T>)
+}
+
 export async function getImageProcessor(): Promise<SharpFunction> {
   if (imageProcessorModule) {
     return imageProcessorModule.default
@@ -56,12 +69,7 @@ export async function getImageProcessor(): Promise<SharpFunction> {
     }
   }
 
-  // Use sharp for non-bundled builds or as fallback.
-  // Single structural cast: our SharpFunction is a subset of sharp's actual type surface.
-  const imported = (await import(
-    'sharp'
-  )) as unknown as MaybeDefault<SharpFunction>
-  const sharp = unwrapDefault(imported)
+  const sharp = loadSharp<SharpFunction>()
   imageProcessorModule = { default: sharp }
   return sharp
 }
@@ -76,10 +84,7 @@ export async function getImageCreator(): Promise<SharpCreator> {
     return imageCreatorModule.default
   }
 
-  const imported = (await import(
-    'sharp'
-  )) as unknown as MaybeDefault<SharpCreator>
-  const sharp = unwrapDefault(imported)
+  const sharp = loadSharp<SharpCreator>()
   imageCreatorModule = { default: sharp }
   return sharp
 }

@@ -190,6 +190,10 @@ bun build
 | `bun run build:dev:full` | `./cli-dev` | All 54 experimental flags | Full unlock build |
 | `bun run compile` | `./dist/cli` | `VOICE_MODE` only | Alternative output path |
 
+Image processing loads `sharp` and its native dependencies from the installed
+`node_modules` beside the executable or in a parent directory. Keep that directory
+when moving the binary; the executable alone does not include these dependencies.
+
 ### Custom Feature Flags
 
 Enable specific flags without the full bundle:
